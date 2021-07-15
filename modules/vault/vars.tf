@@ -16,3 +16,17 @@ variable "vault_tls_cert" {
 
 variable "vault_tls_key" {
 }
+variable "project_id" {
+  type        = string
+}
+variable "key_ring" {
+  type      = string
+}
+
+variable "crypto_key" {
+  type      = string
+}
+
+variable "keyring_location" {
+  type      = string
+}

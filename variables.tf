@@ -10,45 +10,35 @@ variable "region" {
   type        = string
 }
 
-variable "cluster_location" {
-  type        = string
-}
-
 variable "cluster_name" {
   type        = string
 }
-
-variable "initial_node_count" {
+variable "cluster_location" {
+  type        = string
+}
+variable "cluster_node_count" {
   type        = number
 }
 
-variable "network" {
-  type        = string
+variable "num_vault_pods" {
+  type        = number
 }
 
-variable "subnetwork" {
-  type        = string
-}
-
-variable "node_machine_type" {
-  type      = string
-  default   = "n1-standard-1"
-}
-
-variable "node_image_type" {
-  type      = string
-  default   = "COS"
+variable "num_consul_pods" {
+  type        = number
 }
 
 variable "key_ring" {
   type      = string
+  default   = "vault-autounseal-keyring"
 }
 
 variable "crypto_key" {
   type      = string
+  default   = "vault-autounseal-key"
 }
 
 variable "keyring_location" {
   type      = string
+  default   = "global"
 }
-

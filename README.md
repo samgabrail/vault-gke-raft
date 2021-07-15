@@ -1,26 +1,22 @@
 # Deploying Vault with integrated storage on GKE
 
-First, clone the Terraform code in any location and then also clone the Vault helm chart.
+First, clone the Terraform code in any location.
 
 ```
 $ git clone https://github.com/mohsinrz/vault-gke-raft
 $ cd vault-gke-raft
-$ git clone https://github.com/hashicorp/vault-helm 
 ```
-
-Setup gcloud authentication for your account, create a service account which has access to use resources in your project and store the json for this account in the `creds` folder. After that modify the `terraform.tfvars` accordingly and deploy the stack.
 
 ```
 $ terraform init
 $ terraform apply
 ```
 
-After completion Terraform code will output the URL for accessing the newly deployed Vault. We can check status of the pods using `kubectl` but for that first get the credentials for the GKE cluster.
-
+To get access to the cluster, run the command below:
 ```
-$ gcloud container clusters get-credentials demo-cluster
+gcloud container clusters get-credentials sam-vault-consul-demo --region us-central1 --project sam-gabrail-gcp-demos
 Fetching cluster endpoint and auth data.
-kubeconfig entry generated for demo-cluster.
+kubeconfig entry generated for sam-vault-consul-demo.
 $ 
 $ kubectl get pods -n vault
 NAME                                    READY   STATUS    RESTARTS   AGE
@@ -33,14 +29,10 @@ vault-agent-injector-7d4cccc866-7qfkx   1/1     Running   0          24m
 The pods will not become ready until they are bootstrapped and unsealed which will involve making one of the pod as Raft leader and joining others to this pod. First, we will make `vault-0` as the leader to do that we will run the following commands to initialize Vault and unseal it.
 
 ```
-$ kubectl exec -ti vault-0 -n vault -- vault operator init
+$ kubectl exec -ti vault-0 -n vault -- vault operator init -key-shares=1 -key-threshold=1
 ```
 
-We will use the unseal keys from the output of above command to unseal Vault.
-
-```
-$ kubectl exec -ti vault-0 -n vault -- vault operator unseal
-```
+Vault automatically unseals based on Google KMS
 
 After the Vault is unsealed the pod will become ready and will be elected as leader (you can verify by checking logs `kubectl logs vault-0 -n vault`).
 
@@ -51,9 +43,9 @@ Key             Value
 Seal Type       shamir
 Initialized     true
 Sealed          false
-Total Shares    5
-Threshold       3
-Version         1.4.0
+Total Shares    1
+Threshold       1
+Version         1.7.0
 Cluster Name    vault-cluster-5d640d05
 Cluster ID      4d9f4351-52ac-4819-b0a0-ce9e2949aa87
 HA Enabled      true
@@ -71,7 +63,7 @@ vault-agent-injector-7d4cccc866-fbmz4   1/1     Running   0          2m19s
 Now we will make other pods join the cluster leader `Vault-0` so that they can become part of the Raft cluster and then we have to unseal them. This step will be done for all the remaining pods.
 
 ```
-$ kubectl exec -ti vault-1 -n vault --  vault operator raft join -leader-ca-cert="$(cat ./tls/ca-certificate.cert)" --address "https://vault-1.vault-internal:8200" "https://vault-0.vault-internal:8200" 
+kubectl exec -ti vault-1 -n vault --  vault operator raft join -leader-ca-cert="$(cat ./tls/ca-certificate.cert)" --address "https://vault-1.vault-internal:8200" "https://vault-0.vault-internal:8200" 
 Key       Value
 ---       -----
 Joined    true 

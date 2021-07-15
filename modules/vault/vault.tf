@@ -1,7 +1,10 @@
 resource "helm_release" "vault" {
-  name          = "vault"
-  chart         = "${path.root}/vault-helm"
-  namespace     = kubernetes_namespace.vault.metadata.0.name
+  name       = "vault"
+  chart = "https://github.com/hashicorp/vault-helm/archive/refs/tags/v0.13.0.tar.gz"
+  # repository = "https://helm.releases.hashicorp.com"
+  # chart      = "vault-helm"
+  # version = "0.13.0"
+  namespace  = kubernetes_namespace.vault.metadata.0.name
 
   values = [<<EOF
 global:
@@ -36,12 +39,18 @@ server:
         storage "raft" {
           path = "/vault/data"
         }
+        seal "gcpckms" {
+          project     = "${var.project_id}"
+          region      = "${var.keyring_location}"
+          key_ring    = "${var.key_ring}"
+          crypto_key  = "${var.crypto_key}"
+        }
 ui:
   enabled: true
   serviceType: "LoadBalancer"
   serviceNodePort: null
   externalPort: 8200
 EOF
-]
+  ]
 }
 
