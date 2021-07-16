@@ -29,7 +29,7 @@ vault-agent-injector-7d4cccc866-7qfkx   1/1     Running   0          24m
 The pods will not become ready until they are bootstrapped and unsealed which will involve making one of the pod as Raft leader and joining others to this pod. First, we will make `vault-0` as the leader to do that we will run the following commands to initialize Vault and unseal it.
 
 ```
-$ kubectl exec -ti vault-0 -n vault -- vault operator init -key-shares=1 -key-threshold=1
+kubectl exec -ti vault-0 -n vault -- vault operator init -recovery-shares=1 -recovery-threshold=1
 ```
 
 Vault automatically unseals based on Google KMS
@@ -37,7 +37,7 @@ Vault automatically unseals based on Google KMS
 After the Vault is unsealed the pod will become ready and will be elected as leader (you can verify by checking logs `kubectl logs vault-0 -n vault`).
 
 ```
-$ kubectl exec -ti vault-0 -n vault -- vault status
+kubectl exec -ti vault-0 -n vault -- vault status
 Key             Value
 ---             -----
 Seal Type       shamir
@@ -63,13 +63,14 @@ vault-agent-injector-7d4cccc866-fbmz4   1/1     Running   0          2m19s
 Now we will make other pods join the cluster leader `Vault-0` so that they can become part of the Raft cluster and then we have to unseal them. This step will be done for all the remaining pods.
 
 ```
-kubectl exec -ti vault-1 -n vault --  vault operator raft join -leader-ca-cert="$(cat ./tls/ca-certificate.cert)" --address "https://vault-1.vault-internal:8200" "https://vault-0.vault-internal:8200" 
+kubectl exec -ti vault-1 -n vault -- vault operator raft join -leader-ca-cert="$(cat ./tls/ca-certificate.cert)" --address "https://vault-1.vault-internal:8200" "https://vault-0.vault-internal:8200" 
 Key       Value
 ---       -----
 Joined    true 
 
-# Unseal vault-1
-kubectl exec -ti vault-1 -n vault -- vault operator unseal
+vault-1 should automatically unseal
+```
+kubectl exec -ti vault-2 -n vault -- vault operator raft join -leader-ca-cert="$(cat ./tls/ca-certificate.cert)" --address "https://vault-2.vault-internal:8200" "https://vault-0.vault-internal:8200" 
 ```
 
 ```
@@ -82,6 +83,21 @@ vault-agent-injector-7d4cccc866-5vs9w   1/1     Running   0          12m
 ```
 
 After all the pods become part of the Raft cluster and unsealed, all pods will become ready and Vault cluster will be ready to serve any requests.
+
+## Consul DNS on Kubernetes
+
+You need to follow the instructions below to allow DNS to the `.consul` domain to work for either CoreDNS or Kube-DNS.
+https://www.consul.io/docs/k8s/dns
+For example:
+`vault.service.consul`
+
+There is a `dnstest.yaml` and `consul_dns_configmap.yaml` files in the K8s directory to use.
+
+Summary:
+```
+kubectl get svc consul-consul-dns -o jsonpath='{.spec.clusterIP}'
+```
+Add the output IP to the configmap mentioned above then apply it. You can then run the DNS test job to check.
 
 ## Cleaning up
 

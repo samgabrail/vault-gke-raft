@@ -26,7 +26,9 @@ server:
       enabled: true
       config: |
         ui = true
-
+        service_registration "consul" {
+          address      = "consul-consul-server.consul.svc.cluster.local:8500"
+        }
         listener "tcp" {
           tls_disable = 0
           address = "[::]:8200"

@@ -1,0 +1,11 @@
+# https://www.consul.io/docs/k8s/dns
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+  name: kube-dns
+  namespace: kube-system
+data:
+  stubDomains: |
+    {"consul": ["10.99.243.140"]}

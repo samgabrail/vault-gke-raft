@@ -30,12 +30,12 @@ variable "num_consul_pods" {
 
 variable "key_ring" {
   type      = string
-  default   = "vault-autounseal-keyring"
+  default   = "vault-autounseal-keyring1"
 }
 
 variable "crypto_key" {
   type      = string
-  default   = "vault-autounseal-key"
+  default   = "vault-autounseal-key2"
 }
 
 variable "keyring_location" {
